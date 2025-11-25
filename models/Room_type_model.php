@@ -1,0 +1,70 @@
+<?php
+
+class Room_type_model {
+    protected $db;
+    protected $qb;
+
+    public function __construct($db) {
+        $this->db = $db;
+        $this->qb = new QueryBuilder($db);
+    }
+
+    // Get all room types
+    public function getAll() {
+        return $this->qb->table('room_types')->get();
+    }
+
+    // Get room type by ID
+    public function find($id) {
+        return $this->qb->table('room_types')
+            ->where('id', '=', $id)
+            ->first();
+    }
+
+    // Create room type
+    public function create($data) {
+        return $this->qb->table('room_types')->insertGetId($data);
+    }
+
+    // Update room type
+    public function update($id, $data) {
+        return $this->qb->table('room_types')
+            ->where('id', '=', $id)
+            ->update($data);
+    }
+
+    // Delete room type
+    public function delete($id) {
+        // Cek apakah masih ada room yang pakai tipe ini
+        $roomCount = $this->qb->table('rooms')
+            ->where('room_type_id', '=', $id)
+            ->count();
+
+        if ($roomCount > 0) {
+            // Tidak boleh hapus, masih dipakai
+            return false;
+        }
+
+        // Aman untuk dihapus
+        return $this->qb->table('room_types')
+            ->where('id', '=', $id)
+            ->delete();
+    }
+
+    // Get all with available rooms count
+    public function getAllWithAvailableRooms() {
+        $roomTypes = $this->getAll();
+        
+        foreach ($roomTypes as &$type) {
+            $availableCount = $this->qb->table('rooms')
+                ->where('room_type_id', '=', $type['id'])
+                ->where('status', '=', 'Available')
+                ->count();
+            
+            $type['available_rooms'] = $availableCount;
+        }
+        
+        return $roomTypes;
+    }
+}
+?>
