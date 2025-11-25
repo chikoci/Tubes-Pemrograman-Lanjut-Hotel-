@@ -1,5 +1,5 @@
 <?php
-// Controller Admin - untuk manajemen hotel (room types, rooms, payments, bookings)
+// Admin Controller - manajemen hotel
 class AdminController {
     private $roomTypeModel;
     private $roomModel;
@@ -14,39 +14,39 @@ class AdminController {
         $this->paymentModel = new Payment_model($db->getConnection());
     }
 
-    // Method untuk dashboard admin
+    // Dashboard admin
     public function dashboard() {
         requireAdmin();
 
-        // Get statistics
+        // ambil statistik
         $stats = $this->bookingModel->getStatistics();
         
-        // Get total room types dan rooms
+        // hitung total room types dan rooms
         $totalRoomTypes = count($this->roomTypeModel->getAll());
         $totalRooms = count($this->roomModel->getAll());
         
         $stats['total_room_types'] = $totalRoomTypes;
         $stats['total_rooms'] = $totalRooms;
 
-        // Load view
-        include 'views/layouts/header.php';
+        // tampilkan view
+        include 'views/layouts/header.php';;
         include 'views/admin/dashboard.php';
         include 'views/layouts/footer.php';
     }
 
-    // Method untuk manajemen tipe kamar
+    // manajemen tipe kamar
     public function roomTypes() {
         requireAdmin();
 
         $roomTypes = $this->roomTypeModel->getAll();
 
-        // Load view
+        // tampilkan view
         include 'views/layouts/header.php';
         include 'views/admin/room_types.php';
         include 'views/layouts/footer.php';
     }
 
-    // Method untuk form tambah/edit tipe kamar
+    // Form tambah/edit tipe kamar
     public function roomTypeForm() {
         requireAdmin();
 
@@ -64,13 +64,13 @@ class AdminController {
             }
         }
 
-        // Load view
+        // tampilkan view
         include 'views/layouts/header.php';
         include 'views/admin/room_type_form.php';
         include 'views/layouts/footer.php';
     }
 
-    // Method untuk save tipe kamar (create/update)
+    // save room type
     public function saveRoomType() {
         requireAdmin();
 
@@ -82,10 +82,10 @@ class AdminController {
                 'image' => trim($_POST['image'])
             ];
 
-            // Tentukan mode edit/tambah sejak awal
+            // cek mode edit atau tambah baru
             $isEdit = !empty($_POST['id']);
 
-            // Validasi menggunakan helper validate()
+            // validasi data
             $errors = validate($data, [
                 'name' => ['required'],
                 'price' => ['required', 'numeric']
@@ -129,7 +129,7 @@ class AdminController {
         redirect('admin/roomTypes');
     }
 
-    // Method untuk delete tipe kamar
+    // hapus tipe kamar
     public function deleteRoomType() {
         requireAdmin();
 
@@ -146,19 +146,18 @@ class AdminController {
         redirect('admin/roomTypes');
     }
 
-    // Method untuk manajemen kamar
+    // Manajemen kamar
     public function rooms() {
         requireAdmin();
 
         $rooms = $this->roomModel->getAll();
 
-        // Load view
         include 'views/layouts/header.php';
         include 'views/admin/rooms.php';
         include 'views/layouts/footer.php';
     }
 
-    // Method untuk form tambah/edit kamar
+    // form add/edit room
     public function roomForm() {
         requireAdmin();
 
@@ -177,13 +176,13 @@ class AdminController {
             }
         }
 
-        // Load view
+        // tampilkan view
         include 'views/layouts/header.php';
         include 'views/admin/room_form.php';
         include 'views/layouts/footer.php';
     }
 
-    // Method untuk save kamar (create/update)
+    // save room data
     public function saveRoom() {
         requireAdmin();
 
@@ -194,10 +193,10 @@ class AdminController {
                 'status' => trim($_POST['status'])
             ];
 
-            // Tentukan mode edit/tambah sejak awal
+            // cek edit atau tambah baru
             $isEdit = !empty($_POST['id']);
 
-            // Validasi menggunakan helper validate()
+            // validasi data
             $errors = validate($data, [
                 'room_type_id' => ['required'],
                 'room_number' => ['required']
@@ -205,7 +204,7 @@ class AdminController {
 
             if (empty($errors)) {
                 if ($isEdit) {
-                    // Update
+                    // update data
                     $updated = $this->roomModel->update($_POST['id'], $data);
                     
                     if ($updated) {
@@ -241,7 +240,7 @@ class AdminController {
         redirect('admin/rooms');
     }
 
-    // Method untuk delete kamar
+    // delete room
     public function deleteRoom() {
         requireAdmin();
 
@@ -258,19 +257,19 @@ class AdminController {
         redirect('admin/rooms');
     }
 
-    // Method untuk manajemen pembayaran
+    // manajemen pembayaran
     public function payments() {
         requireAdmin();
 
         $payments = $this->paymentModel->getAllWithDetails();
 
-        // Load view
+        // tampilkan view
         include 'views/layouts/header.php';
         include 'views/admin/payments.php';
         include 'views/layouts/footer.php';
     }
 
-    // Method untuk approve payment (menggunakan transaksi PDO)
+    // approve payment
     public function approvePayment() {
         requireAdmin();
 
@@ -287,13 +286,13 @@ class AdminController {
         redirect('admin/payments');
     }
 
-    // Method untuk manajemen bookings
+    // manajemen bookings
     public function bookings() {
         requireAdmin();
 
         $bookings = $this->bookingModel->getAll();
 
-        // Load view
+        // tampilkan view
         include 'views/layouts/header.php';
         include 'views/admin/bookings.php';
         include 'views/layouts/footer.php';

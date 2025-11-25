@@ -1,5 +1,5 @@
 <?php
-// Controller Booking - untuk proses booking kamar
+// Booking Controller
 class BookingController {
     private $roomModel;
     private $bookingModel;
@@ -12,7 +12,7 @@ class BookingController {
         $this->paymentModel = new Payment_model($db->getConnection());
     }
 
-    // Method untuk search kamar available
+    // search available rooms
     public function search() {
         requireLogin();
 
@@ -59,7 +59,7 @@ class BookingController {
         include 'views/layouts/footer.php';
     }
 
-    // Method untuk create booking
+    // buat booking baru
     public function create() {
         requireLogin();
 
@@ -99,7 +99,7 @@ class BookingController {
         include 'views/layouts/footer.php';
     }
 
-    // Method untuk store booking
+    // simpan booking
     public function store() {
         requireLogin();
 
@@ -142,7 +142,7 @@ class BookingController {
         redirect('booking/search');
     }
 
-    // Method untuk halaman pembayaran
+    // halaman payment
     public function payment() {
         requireLogin();
 

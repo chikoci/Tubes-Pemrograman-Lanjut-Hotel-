@@ -9,12 +9,12 @@ class Booking_model {
         $this->qb = new QueryBuilder($db);
     }
 
-    // Create booking
+    // buat booking baru
     public function create($data) {
         return $this->qb->table('bookings')->insertGetId($data);
     }
 
-    // Get booking by ID
+    // ambil booking by ID
     public function find($id) {
         return $this->qb->table('bookings')
             ->select([
@@ -30,7 +30,7 @@ class Booking_model {
             ->first();
     }
 
-    // Get bookings by user
+    // ambil booking by user
     public function getByUser($userId) {
         return $this->qb->table('bookings')
             ->select([
@@ -45,7 +45,7 @@ class Booking_model {
             ->get();
     }
 
-    // Get all bookings (admin)
+    // ambil semua bookings (admin)
     public function getAll() {
         return $this->qb->table('bookings')
             ->select([
@@ -61,14 +61,14 @@ class Booking_model {
             ->get();
     }
 
-    // Update booking status
+    // update status booking
     public function updateStatus($id, $status) {
         return $this->qb->table('bookings')
             ->where('id', '=', $id)
             ->update(['status' => $status]);
     }
 
-    // Calculate nights
+    // hitung jumlah malam
     public function calculateNights($checkIn, $checkOut) {
         $start = new DateTime($checkIn);
         $end = new DateTime($checkOut);
@@ -76,7 +76,7 @@ class Booking_model {
         return $diff->days;
     }
 
-    // Get statistics (admin)
+    // statistik booking (admin)
     public function getStatistics() {
         $totalBookings = $this->qb->table('bookings')->count();
         

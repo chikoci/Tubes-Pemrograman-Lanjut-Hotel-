@@ -1,5 +1,5 @@
 <?php
-// Controller Auth - untuk autentikasi (login, register, profile)
+// Auth Controller
 class AuthController {
     private $userModel;
 
@@ -8,9 +8,9 @@ class AuthController {
         $this->userModel = new User_model($db->getConnection());
     }
 
-    // Method untuk menampilkan halaman login
+    // halaman login
     public function login() {
-        // Jika sudah login, redirect ke home
+        // kalo udah login redirect aja
         if (isLoggedIn()) {
             redirect('home');
             return;
@@ -61,9 +61,9 @@ class AuthController {
         include 'views/auth/login.php';
     }
 
-    // Method untuk menampilkan halaman register
+    // Register
     public function register() {
-        // Jika sudah login, redirect ke home
+        // kalo udah login redirect ke home
         if (isLoggedIn()) {
             redirect('home');
             return;
@@ -124,25 +124,24 @@ class AuthController {
         include 'views/auth/register.php';
     }
 
-    // Method untuk logout
+    // logout user
     public function logout() {
         session_destroy();
         redirect('auth/login');
     }
 
-    // Method untuk menampilkan halaman profile
+    // halaman profil
     public function profile() {
         requireLogin();
 
-        $user = $this->userModel->find($_SESSION['user_id']);
+        $user = currentUser();
 
-        // Load view
         include 'views/layouts/header.php';
         include 'views/auth/profile.php';
         include 'views/layouts/footer.php';
     }
 
-    // Method untuk update profile
+    // update profile user
     public function updateProfile() {
         requireLogin();
 

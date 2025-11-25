@@ -9,19 +9,19 @@ class Payment_model {
         $this->qb = new QueryBuilder($db);
     }
 
-    // Create payment
+    // insert payment
     public function create($data) {
         return $this->qb->table('payments')->insertGetId($data);
     }
 
-    // Get payment by booking ID
+    // ambil payment berdasarkan booking ID
     public function getByBooking($bookingId) {
         return $this->qb->table('payments')
             ->where('booking_id', '=', $bookingId)
             ->first();
     }
 
-    // Get all pending payments (admin)
+    // ambil semua pending payments (admin)
     public function getPending() {
         return $this->qb->table('payments')
             ->select([
@@ -41,12 +41,12 @@ class Payment_model {
             ->get();
     }
 
-    // Approve payment (with transaction)
+    // approve payment (pake transaction)
     public function approvePayment($paymentId) {
         try {
             $this->db->beginTransaction();
             
-            // Get payment info
+            // ambil info payment
             $payment = $this->qb->table('payments')
                 ->where('id', '=', $paymentId)
                 ->first();
@@ -55,12 +55,12 @@ class Payment_model {
                 throw new Exception("Payment tidak ditemukan");
             }
             
-            // Update payment status
+            // update status payment
             $this->qb->table('payments')
                 ->where('id', '=', $paymentId)
                 ->update(['status' => 'Success']);
             
-            // Update booking status
+            // update status booking
             $this->qb->table('bookings')
                 ->where('id', '=', $payment['booking_id'])
                 ->update(['status' => 'Confirmed']);
@@ -74,14 +74,14 @@ class Payment_model {
         }
     }
 
-    // Get pending payments count
+    // hitung pending payments
     public function getPendingCount() {
         return $this->qb->table('payments')
             ->where('status', '=', 'Pending')
             ->count();
     }
 
-    // Get all payments with details (for admin)
+    // ambil semua payments dengan detail (untuk admin)
     public function getAllWithDetails() {
         return $this->qb->table('payments')
             ->select([

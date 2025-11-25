@@ -9,23 +9,23 @@ class User_model {
         $this->qb = new QueryBuilder($db);
     }
 
-    // Method untuk registrasi user baru
+    // register user baru
     public function register($data) {
-        // Hash password
+        // hash password
         $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
         
-        // Get role_id untuk Tamu
+        // ambil role_id untuk Tamu
         $role = $this->qb->table('roles')
             ->where('role_name', '=', 'Tamu')
             ->first();
         
         $data['role_id'] = $role['id'];
         
-        // Insert user baru
+        // insert user baru
         return $this->qb->table('users')->insertGetId($data);
     }
 
-    // Method untuk login
+    // proses login
     public function login($email, $password) {
         $user = $this->qb->table('users')
             ->select(['users.*', 'roles.role_name'])
@@ -40,7 +40,7 @@ class User_model {
         return false;
     }
 
-    // Method untuk cek email sudah ada
+    // cek email udah ada atau belum
     public function emailExists($email, $excludeUserId = null) {
         $query = $this->qb->table('users')
             ->where('email', '=', $email);
@@ -52,21 +52,21 @@ class User_model {
         return $query->first() !== null;
     }
 
-    // Method untuk get user by ID
+    // ambil user by ID
     public function find($id) {
         return $this->qb->table('users')
             ->where('id', '=', $id)
             ->first();
     }
 
-    // Method untuk get user by email (digunakan pada fitur lupa password)
+    // ambil user by email (untuk forgot password)
     public function getByEmail($email) {
         return $this->qb->table('users')
             ->where('email', '=', $email)
             ->first();
     }
 
-    // Method untuk update profile
+    // update profil user
     public function updateProfile($id, $data) {
         // Buat array bersih hanya berisi kolom yang ada di tabel users
         $updateData = [

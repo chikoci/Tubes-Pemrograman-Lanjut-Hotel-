@@ -8,7 +8,7 @@ class Database {
     private $password = "";
     private $conn = null;
 
-    // Method untuk mendapatkan koneksi database
+    // dapetin koneksi database
     public function getConnection() {
         if ($this->conn === null) {
             try {

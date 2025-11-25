@@ -9,31 +9,31 @@ class Room_type_model {
         $this->qb = new QueryBuilder($db);
     }
 
-    // Get all room types
+    // get semua tipe kamar
     public function getAll() {
         return $this->qb->table('room_types')->get();
     }
 
-    // Get room type by ID
+    // ambil tipe kamar by ID
     public function find($id) {
         return $this->qb->table('room_types')
             ->where('id', '=', $id)
             ->first();
     }
 
-    // Create room type
+    // buat tipe kamar baru
     public function create($data) {
         return $this->qb->table('room_types')->insertGetId($data);
     }
 
-    // Update room type
+    // update tipe kamar
     public function update($id, $data) {
         return $this->qb->table('room_types')
             ->where('id', '=', $id)
             ->update($data);
     }
 
-    // Delete room type
+    // hapus tipe kamar
     public function delete($id) {
         // Cek apakah masih ada room yang pakai tipe ini
         $roomCount = $this->qb->table('rooms')
@@ -51,7 +51,7 @@ class Room_type_model {
             ->delete();
     }
 
-    // Get all with available rooms count
+    // ambil semua dengan jumlah kamar tersedia
     public function getAllWithAvailableRooms() {
         $roomTypes = $this->getAll();
         

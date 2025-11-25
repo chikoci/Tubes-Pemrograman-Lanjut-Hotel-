@@ -9,7 +9,7 @@ class Room_model {
         $this->qb = new QueryBuilder($db);
     }
 
-    // Get all rooms with room type info
+    // ambil semua rooms
     public function getAll() {
         return $this->qb->table('rooms')
             ->select(['rooms.*', 'room_types.name as room_type_name', 'room_types.price'])
@@ -17,7 +17,7 @@ class Room_model {
             ->get();
     }
 
-    // Get room by ID
+    // ambil room by ID
     public function find($id) {
         return $this->qb->table('rooms')
             ->select(['rooms.*', 'room_types.name as room_type_name', 'room_types.price', 'room_types.description'])
@@ -26,28 +26,28 @@ class Room_model {
             ->first();
     }
 
-    // Create room
+    // buat room baru
     public function create($data) {
         return $this->qb->table('rooms')->insertGetId($data);
     }
 
-    // Update room
+    // update data room
     public function update($id, $data) {
         return $this->qb->table('rooms')
             ->where('id', '=', $id)
             ->update($data);
     }
 
-    // Delete room
+    // hapus room
     public function delete($id) {
         return $this->qb->table('rooms')
             ->where('id', '=', $id)
             ->delete();
     }
 
-    // Search available rooms
+    // cari kamar available
     public function searchAvailable($checkIn, $checkOut) {
-        // SQL manual untuk query kompleks
+        // SQL manual untuk query komplex
         $sql = "
             SELECT 
                 r.id, r.room_number, r.status,
@@ -74,7 +74,7 @@ class Room_model {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Check if room is available
+    // cek apakah room tersedia
     public function isAvailable($roomId, $checkIn, $checkOut) {
         $sql = "
             SELECT COUNT(*) as count
