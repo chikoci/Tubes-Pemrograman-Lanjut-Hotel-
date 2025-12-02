@@ -1,5 +1,4 @@
 <?php
-
 class Room_type_model {
     protected $db;
     protected $qb;
@@ -9,59 +8,51 @@ class Room_type_model {
         $this->qb = new QueryBuilder($db);
     }
 
-    // get semua tipe kamar
     public function getAll() {
-        return $this->qb->table('room_types')->get();
+        $this->qb->table('room_types');
+        return $this->qb->get();
     }
 
-    // ambil tipe kamar by ID
     public function find($id) {
-        return $this->qb->table('room_types')
-            ->where('id', '=', $id)
-            ->first();
+        $this->qb->table('room_types');
+        $this->qb->where('id', '=', $id);
+        return $this->qb->first();
     }
 
-    // buat tipe kamar baru
     public function create($data) {
-        return $this->qb->table('room_types')->insertGetId($data);
+        $this->qb->table('room_types');
+        return $this->qb->insertGetId($data);
     }
 
-    // update tipe kamar
     public function update($id, $data) {
-        return $this->qb->table('room_types')
-            ->where('id', '=', $id)
-            ->update($data);
+        $this->qb->table('room_types');
+        $this->qb->where('id', '=', $id);
+        return $this->qb->update($data);
     }
 
-    // hapus tipe kamar
     public function delete($id) {
         // Cek apakah masih ada room yang pakai tipe ini
-        $roomCount = $this->qb->table('rooms')
-            ->where('room_type_id', '=', $id)
-            ->count();
+        $this->qb->table('rooms');
+        $this->qb->where('room_type_id', '=', $id);
+        $roomCount = $this->qb->count();
 
         if ($roomCount > 0) {
-            // Tidak boleh hapus, masih dipakai
             return false;
         }
 
-        // Aman untuk dihapus
-        return $this->qb->table('room_types')
-            ->where('id', '=', $id)
-            ->delete();
+        $this->qb->table('room_types');
+        $this->qb->where('id', '=', $id);
+        return $this->qb->delete();
     }
 
-    // ambil semua dengan jumlah kamar tersedia
     public function getAllWithAvailableRooms() {
         $roomTypes = $this->getAll();
         
-        foreach ($roomTypes as &$type) {
-            $availableCount = $this->qb->table('rooms')
-                ->where('room_type_id', '=', $type['id'])
-                ->where('status', '=', 'Available')
-                ->count();
-            
-            $type['available_rooms'] = $availableCount;
+        foreach ($roomTypes as $index => $type) {
+            $this->qb->table('rooms');
+            $this->qb->where('room_type_id', '=', $type['id']);
+            $this->qb->where('status', '=', 'Available');
+            $roomTypes[$index]['available_rooms'] = $this->qb->count();
         }
         
         return $roomTypes;

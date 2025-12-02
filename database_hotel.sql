@@ -1,8 +1,8 @@
--- Database Hotel Management System
+-- Active: 1761218254352@@127.0.0.1@3306@kluwa_hotel
+-- Database Kluwa
 -- Buat database baru
-CREATE DATABASE IF NOT EXISTS hotel_app;
-USE hotel_app;
-
+CREATE DATABASE IF NOT EXISTS kluwa_hotel;
+USE kluwa_hotel;
 -- Tabel roles
 CREATE TABLE IF NOT EXISTS roles (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -40,10 +40,9 @@ CREATE TABLE IF NOT EXISTS room_types (
 
 -- Data tipe kamar
 INSERT INTO room_types (name, price, description, image) VALUES
-('Standard', 350000, 'Kamar standar dengan fasilitas lengkap, AC, TV, Wi-Fi gratis', 'standard.jpg'),
-('Deluxe', 500000, 'Kamar deluxe dengan pemandangan kota, AC, TV, Wi-Fi gratis, kamar mandi dalam', 'deluxe.jpg'),
-('Suite', 850000, 'Suite mewah dengan ruang tamu terpisah, AC, TV, Wi-Fi gratis, bathtub', 'suite.jpg');
-
+('Standard', 500000, 'Kamar standar dengan fasilitas lengkap, AC, TV, Wi-Fi gratis', 'rooms/standard.jpg'),
+('Deluxe', 800000, 'Kamar deluxe dengan pemandangan kota, AC, TV, Wi-Fi gratis, Bathub', 'rooms/deluxe.jpg'),
+('Suite', 1200000, 'Suite mewah dengan ruang tamu terpisah, AC, TV, Wi-Fi gratis, Bathub', 'rooms/suite.jpg');
 -- Tabel rooms
 CREATE TABLE IF NOT EXISTS rooms (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -65,7 +64,22 @@ INSERT INTO rooms (room_type_id, room_number, status) VALUES
 (3, '301', 'Available'),
 (3, '302', 'Available');
 
--- Tabel bookings
+-- Tabel payment_types
+CREATE TABLE IF NOT EXISTS payment_types (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Data tipe pembayaran
+INSERT INTO payment_types (name, description) VALUES
+('QRIS', 'Pembayaran menggunakan QR Code Indonesia Standard'),
+('Transfer Bank', 'Transfer ke rekening bank hotel'),
+('Debit Bank', 'Pembayaran menggunakan kartu debit'),
+('Cash', 'Pembayaran tunai di hotel');
+
+-- Tabel bookings (dengan payment fields digabung)
 CREATE TABLE IF NOT EXISTS bookings (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -74,18 +88,12 @@ CREATE TABLE IF NOT EXISTS bookings (
     check_out_date DATE NOT NULL,
     total_price DECIMAL(12,2) NOT NULL,
     status ENUM('Pending', 'Confirmed', 'Cancelled') DEFAULT 'Pending',
+    payment_type_id INT DEFAULT NULL,
+    payment_proof VARCHAR(255) DEFAULT NULL,
+    payment_date TIMESTAMP NULL,
+    payment_status ENUM('Pending', 'Success', 'Failed') DEFAULT 'Pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (room_id) REFERENCES rooms(id)
-);
-
--- Tabel payments
-CREATE TABLE IF NOT EXISTS payments (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    booking_id INT NOT NULL,
-    amount DECIMAL(12,2) NOT NULL,
-    payment_date TIMESTAMP NOT NULL,
-    status ENUM('Pending', 'Success', 'Failed') DEFAULT 'Pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (booking_id) REFERENCES bookings(id)
+    FOREIGN KEY (room_id) REFERENCES rooms(id),
+    FOREIGN KEY (payment_type_id) REFERENCES payment_types(id)
 );

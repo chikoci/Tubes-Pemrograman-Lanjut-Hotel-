@@ -46,7 +46,7 @@
                              alt="<?php echo e($room['room_type_name']); ?>" class="room-image">
                     <?php else: ?>
                         <div class="room-image-placeholder">
-                            <span>Tidak ada gambar</span>
+                            <span class="placeholder-icon">🛏️</span>
                         </div>
                     <?php endif; ?>
                     

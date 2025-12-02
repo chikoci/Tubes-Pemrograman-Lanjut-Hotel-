@@ -1,17 +1,15 @@
 <?php
 // Admin Controller - manajemen hotel
-class AdminController {
+class AdminController extends BaseController {
     private $roomTypeModel;
     private $roomModel;
     private $bookingModel;
-    private $paymentModel;
 
     public function __construct() {
-        $db = new Database();
-        $this->roomTypeModel = new Room_type_model($db->getConnection());
-        $this->roomModel = new Room_model($db->getConnection());
-        $this->bookingModel = new Booking_model($db->getConnection());
-        $this->paymentModel = new Payment_model($db->getConnection());
+        parent::__construct();
+        $this->roomTypeModel = new Room_type_model($this->db);
+        $this->roomModel = new Room_model($this->db);
+        $this->bookingModel = new Booking_model($this->db);
     }
 
     // Dashboard admin
@@ -28,10 +26,7 @@ class AdminController {
         $stats['total_room_types'] = $totalRoomTypes;
         $stats['total_rooms'] = $totalRooms;
 
-        // tampilkan view
-        include 'views/layouts/header.php';;
-        include 'views/admin/dashboard.php';
-        include 'views/layouts/footer.php';
+        $this->view('admin/dashboard', ['stats' => $stats]);
     }
 
     // manajemen tipe kamar
@@ -40,10 +35,7 @@ class AdminController {
 
         $roomTypes = $this->roomTypeModel->getAll();
 
-        // tampilkan view
-        include 'views/layouts/header.php';
-        include 'views/admin/room_types.php';
-        include 'views/layouts/footer.php';
+        $this->view('admin/room_types', ['roomTypes' => $roomTypes]);
     }
 
     // Form tambah/edit tipe kamar
@@ -64,10 +56,11 @@ class AdminController {
             }
         }
 
-        // tampilkan view
-        include 'views/layouts/header.php';
-        include 'views/admin/room_type_form.php';
-        include 'views/layouts/footer.php';
+        $data = [
+            'roomType' => $roomType,
+            'isEdit' => $isEdit
+        ];
+        $this->view('admin/room_type_form', $data);
     }
 
     // save room type
@@ -152,9 +145,7 @@ class AdminController {
 
         $rooms = $this->roomModel->getAll();
 
-        include 'views/layouts/header.php';
-        include 'views/admin/rooms.php';
-        include 'views/layouts/footer.php';
+        $this->view('admin/rooms', ['rooms' => $rooms]);
     }
 
     // form add/edit room
@@ -176,10 +167,12 @@ class AdminController {
             }
         }
 
-        // tampilkan view
-        include 'views/layouts/header.php';
-        include 'views/admin/room_form.php';
-        include 'views/layouts/footer.php';
+        $data = [
+            'room' => $room,
+            'isEdit' => $isEdit,
+            'roomTypes' => $roomTypes
+        ];
+        $this->view('admin/room_form', $data);
     }
 
     // save room data
@@ -257,45 +250,22 @@ class AdminController {
         redirect('admin/rooms');
     }
 
-    // manajemen pembayaran
-    public function payments() {
-        requireAdmin();
-
-        $payments = $this->paymentModel->getAllWithDetails();
-
-        // tampilkan view
-        include 'views/layouts/header.php';
-        include 'views/admin/payments.php';
-        include 'views/layouts/footer.php';
-    }
-
-    // approve payment
-    public function approvePayment() {
-        requireAdmin();
-
-        if (isset($_GET['id'])) {
-            $approved = $this->paymentModel->approvePayment($_GET['id']);
-            
-            if ($approved) {
-                setFlash('success', 'Pembayaran berhasil dikonfirmasi');
-            } else {
-                setFlash('error', 'Terjadi kesalahan saat konfirmasi pembayaran');
-            }
-        }
-
-        redirect('admin/payments');
-    }
-
     // manajemen bookings
     public function bookings() {
         requireAdmin();
 
         $bookings = $this->bookingModel->getAll();
 
-        // tampilkan view
-        include 'views/layouts/header.php';
-        include 'views/admin/bookings.php';
-        include 'views/layouts/footer.php';
+        $this->view('admin/bookings', ['bookings' => $bookings]);
+    }
+
+    // manajemen pembayaran
+    public function payments() {
+        requireAdmin();
+
+        $bookings = $this->bookingModel->getAll();
+
+        $this->view('admin/payments', ['bookings' => $bookings]);
     }
 }
 ?>

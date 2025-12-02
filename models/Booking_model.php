@@ -1,5 +1,4 @@
 <?php
-
 class Booking_model {
     protected $db;
     protected $qb;
@@ -9,66 +8,67 @@ class Booking_model {
         $this->qb = new QueryBuilder($db);
     }
 
-    // buat booking baru
     public function create($data) {
-        return $this->qb->table('bookings')->insertGetId($data);
+        $this->qb->table('bookings');
+        return $this->qb->insertGetId($data);
     }
 
-    // ambil booking by ID
     public function find($id) {
-        return $this->qb->table('bookings')
-            ->select([
-                'bookings.*',
-                'users.name as user_name', 'users.email as user_email',
-                'rooms.room_number',
-                'room_types.name as room_type_name'
-            ])
-            ->join('users', 'bookings.user_id', '=', 'users.id')
-            ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
-            ->join('room_types', 'rooms.room_type_id', '=', 'room_types.id')
-            ->where('bookings.id', '=', $id)
-            ->first();
+        $this->qb->table('bookings');
+        $this->qb->select([
+            'bookings.*',
+            'users.name as user_name', 'users.email as user_email',
+            'rooms.room_number',
+            'room_types.name as room_type_name',
+            'payment_types.name as payment_type_name'
+        ]);
+        $this->qb->join('users', 'bookings.user_id', '=', 'users.id');
+        $this->qb->join('rooms', 'bookings.room_id', '=', 'rooms.id');
+        $this->qb->join('room_types', 'rooms.room_type_id', '=', 'room_types.id');
+        $this->qb->leftJoin('payment_types', 'bookings.payment_type_id', '=', 'payment_types.id');
+        $this->qb->where('bookings.id', '=', $id);
+        return $this->qb->first();
     }
 
-    // ambil booking by user
     public function getByUser($userId) {
-        return $this->qb->table('bookings')
-            ->select([
-                'bookings.*',
-                'rooms.room_number',
-                'room_types.name as room_type_name', 'room_types.price'
-            ])
-            ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
-            ->join('room_types', 'rooms.room_type_id', '=', 'room_types.id')
-            ->where('bookings.user_id', '=', $userId)
-            ->orderBy('bookings.created_at', 'DESC')
-            ->get();
+        $this->qb->table('bookings');
+        $this->qb->select([
+            'bookings.*',
+            'rooms.room_number',
+            'room_types.name as room_type_name', 'room_types.price',
+            'payment_types.name as payment_type_name'
+        ]);
+        $this->qb->join('rooms', 'bookings.room_id', '=', 'rooms.id');
+        $this->qb->join('room_types', 'rooms.room_type_id', '=', 'room_types.id');
+        $this->qb->leftJoin('payment_types', 'bookings.payment_type_id', '=', 'payment_types.id');
+        $this->qb->where('bookings.user_id', '=', $userId);
+        $this->qb->orderBy('bookings.created_at', 'DESC');
+        return $this->qb->get();
     }
 
-    // ambil semua bookings (admin)
     public function getAll() {
-        return $this->qb->table('bookings')
-            ->select([
-                'bookings.*',
-                'users.name as user_name', 'users.email as user_email',
-                'rooms.room_number',
-                'room_types.name as room_type_name'
-            ])
-            ->join('users', 'bookings.user_id', '=', 'users.id')
-            ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
-            ->join('room_types', 'rooms.room_type_id', '=', 'room_types.id')
-            ->orderBy('bookings.created_at', 'DESC')
-            ->get();
+        $this->qb->table('bookings');
+        $this->qb->select([
+            'bookings.*',
+            'users.name as user_name', 'users.email as user_email',
+            'rooms.room_number',
+            'room_types.name as room_type_name',
+            'payment_types.name as payment_type_name'
+        ]);
+        $this->qb->join('users', 'bookings.user_id', '=', 'users.id');
+        $this->qb->join('rooms', 'bookings.room_id', '=', 'rooms.id');
+        $this->qb->join('room_types', 'rooms.room_type_id', '=', 'room_types.id');
+        $this->qb->leftJoin('payment_types', 'bookings.payment_type_id', '=', 'payment_types.id');
+        $this->qb->orderBy('bookings.created_at', 'DESC');
+        return $this->qb->get();
     }
 
-    // update status booking
     public function updateStatus($id, $status) {
-        return $this->qb->table('bookings')
-            ->where('id', '=', $id)
-            ->update(['status' => $status]);
+        $this->qb->table('bookings');
+        $this->qb->where('id', '=', $id);
+        return $this->qb->update(['status' => $status]);
     }
 
-    // hitung jumlah malam
     public function calculateNights($checkIn, $checkOut) {
         $start = new DateTime($checkIn);
         $end = new DateTime($checkOut);
@@ -76,29 +76,55 @@ class Booking_model {
         return $diff->days;
     }
 
-    // statistik booking (admin)
     public function getStatistics() {
-        $totalBookings = $this->qb->table('bookings')->count();
+        // Total bookings
+        $this->qb->table('bookings');
+        $totalBookings = $this->qb->count();
         
-        $pendingCount = $this->qb->table('bookings')
-            ->where('status', '=', 'Pending')
-            ->count();
+        // Pending count
+        $this->qb->table('bookings');
+        $this->qb->where('status', '=', 'Pending');
+        $pendingCount = $this->qb->count();
         
-        $confirmedCount = $this->qb->table('bookings')
-            ->where('status', '=', 'Confirmed')
-            ->count();
+        // Confirmed count
+        $this->qb->table('bookings');
+        $this->qb->where('status', '=', 'Confirmed');
+        $confirmedCount = $this->qb->count();
         
-        $totalRevenue = $this->qb->table('bookings')
-            ->select(['SUM(total_price) as total'])
-            ->where('status', '=', 'Confirmed')
-            ->first();
+        // Total revenue
+        $this->qb->table('bookings');
+        $this->qb->select(['SUM(total_price) as total']);
+        $this->qb->where('status', '=', 'Confirmed');
+        $revenue = $this->qb->first();
         
         return [
             'total' => $totalBookings,
             'pending' => $pendingCount,
             'confirmed' => $confirmedCount,
-            'revenue' => $totalRevenue['total'] ?? 0
+            'revenue' => $revenue['total'] ?? 0
         ];
+    }
+
+    public function updatePayment($id, $data) {
+        $this->qb->table('bookings');
+        $this->qb->where('id', '=', $id);
+        return $this->qb->update($data);
+    }
+
+    public function approvePayment($id) {
+        try {
+            $this->db->beginTransaction();
+            
+            $this->qb->table('bookings');
+            $this->qb->where('id', '=', $id);
+            $this->qb->update(['payment_status' => 'Success', 'status' => 'Confirmed']);
+            
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            return false;
+        }
     }
 }
 ?>

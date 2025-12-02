@@ -20,7 +20,7 @@
                     <?php endif; ?>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block">Kirim Kode Verifikasi</button>
-                <a href="<?php echo url('auth/login'); ?>" class="btn btn-secondary btn-block">Kembali ke Login</a>
+                <a href="<?php echo url('auth/login'); ?>" class="btn btn-secondary btn-block" style="margin-top: 1rem;">Kembali ke Login</a>
             </form>
         </div>
     </div>

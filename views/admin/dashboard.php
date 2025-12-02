@@ -16,10 +16,12 @@
             <h3>Booking Confirmed</h3>
             <p class="stat-number"><?php echo $stats['confirmed']; ?></p>
         </div>
-        
+    </div>
+
+    <div class="stats-grid">
         <div class="stat-card">
             <h3>Total Revenue</h3>
-            <p class="stat-number"><?php echo formatRupiah($stats['revenue']); ?></p>
+            <p class="stat-number" style="font-size: 1.6rem;"><?php echo formatRupiah($stats['revenue']); ?></p>
         </div>
         
         <div class="stat-card">
@@ -34,26 +36,26 @@
     </div>
     
     <div class="quick-links">
-        <h3>Menu Admin</h3>
+        <h3>Menu Cepat</h3>
         <div class="links-grid">
             <a href="<?php echo url('admin/roomTypes'); ?>" class="quick-link-card">
-                <h4>Manajemen Tipe Kamar</h4>
-                <p>Tambah, edit, hapus tipe kamar</p>
+                <h4>🏷️ Tipe Kamar</h4>
+                <p>Kelola tipe dan harga kamar</p>
             </a>
             
             <a href="<?php echo url('admin/rooms'); ?>" class="quick-link-card">
-                <h4>Manajemen Kamar</h4>
-                <p>Tambah, edit, hapus kamar</p>
-            </a>
-            
-            <a href="<?php echo url('admin/payments'); ?>" class="quick-link-card">
-                <h4>Manajemen Pembayaran</h4>
-                <p>Verifikasi pembayaran</p>
+                <h4>🚪 Kelola Kamar</h4>
+                <p>Tambah dan atur kamar hotel</p>
             </a>
             
             <a href="<?php echo url('admin/bookings'); ?>" class="quick-link-card">
-                <h4>Manajemen Booking</h4>
-                <p>Lihat semua booking</p>
+                <h4>📋 Reservasi</h4>
+                <p>Lihat semua data reservasi</p>
+            </a>
+            
+            <a href="<?php echo url('admin/payments'); ?>" class="quick-link-card">
+                <h4>💳 Pembayaran</h4>
+                <p>Monitor status pembayaran</p>
             </a>
         </div>
     </div>

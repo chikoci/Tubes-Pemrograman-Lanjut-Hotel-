@@ -1,11 +1,11 @@
 <?php
 // Auth Controller
-class AuthController {
+class AuthController extends BaseController {
     private $userModel;
 
     public function __construct() {
-        $db = new Database();
-        $this->userModel = new User_model($db->getConnection());
+        parent::__construct();
+        $this->userModel = new User_model($this->db);
     }
 
     // halaman login
@@ -61,7 +61,7 @@ class AuthController {
         include 'views/auth/login.php';
     }
 
-    // Register
+    // Register - Step 1: Isi form dan kirim kode verifikasi
     public function register() {
         // kalo udah login redirect ke home
         if (isLoggedIn()) {
@@ -100,19 +100,25 @@ class AuthController {
             }
 
             if (empty($errors)) {
-                // Hapus confirm_password dari data
-                unset($data['confirm_password']);
+                // Generate kode verifikasi 6 digit
+                $code = random_int(100000, 999999);
                 
-                // Register user
-                $userId = $this->userModel->register($data);
-
-                if ($userId) {
-                    setFlash('success', 'Registrasi berhasil! Silakan login.');
-                    redirect('auth/login');
-                    return;
-                } else {
-                    $errors['register'] = 'Terjadi kesalahan saat registrasi';
-                }
+                // Simpan data register dan kode ke session
+                unset($data['confirm_password']);
+                $_SESSION['register_data'] = $data;
+                $_SESSION['register_code'] = $code;
+                $_SESSION['register_code_expires'] = time() + 15 * 60; // 15 menit
+                
+                // Kirim email verifikasi
+                $subject = 'Kode Verifikasi Registrasi - Hotel System';
+                $message = "Halo " . $data['name'] . ",\n\n";
+                $message .= "Kode verifikasi registrasi Anda: " . $code . "\n\n";
+                $message .= "Kode ini berlaku selama 15 menit.\n";
+                $message .= "Jika Anda tidak melakukan registrasi, abaikan email ini.";
+                @mail($data['email'], $subject, $message);
+                
+                redirect('auth/verifyRegister');
+                return;
             }
 
             // Jika ada error, simpan untuk ditampilkan
@@ -122,6 +128,92 @@ class AuthController {
 
         // Load view
         include 'views/auth/register.php';
+    }
+    
+    // Register - Step 2: Verifikasi kode dari email
+    public function verifyRegister() {
+        if (isLoggedIn()) {
+            redirect('home');
+            return;
+        }
+        
+        // Cek apakah ada data register di session
+        if (!isset($_SESSION['register_data']) || !isset($_SESSION['register_code'])) {
+            setFlash('error', 'Silakan isi form registrasi terlebih dahulu');
+            redirect('auth/register');
+            return;
+        }
+        
+        $email = $_SESSION['register_data']['email'];
+        
+        // Jika form verifikasi disubmit
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $code = trim($_POST['code'] ?? '');
+            $errors = [];
+            
+            if (empty($code)) {
+                $errors['code'] = 'Kode verifikasi wajib diisi';
+            }
+            
+            if (empty($errors)) {
+                $savedCode = $_SESSION['register_code'];
+                $expires = $_SESSION['register_code_expires'];
+                
+                // Cek apakah kode sudah expired
+                if (time() > $expires) {
+                    $errors['code'] = 'Kode sudah kadaluarsa. Silakan daftar ulang.';
+                    // Hapus session register
+                    unset($_SESSION['register_data'], $_SESSION['register_code'], $_SESSION['register_code_expires']);
+                } elseif ($code != $savedCode) {
+                    $errors['code'] = 'Kode verifikasi salah';
+                } else {
+                    // Kode benar, simpan user ke database
+                    $data = $_SESSION['register_data'];
+                    $userId = $this->userModel->register($data);
+                    
+                    if ($userId) {
+                        // Hapus session register
+                        unset($_SESSION['register_data'], $_SESSION['register_code'], $_SESSION['register_code_expires']);
+                        
+                        setFlash('success', 'Registrasi berhasil! Silakan login.');
+                        redirect('auth/login');
+                        return;
+                    } else {
+                        $errors['code'] = 'Terjadi kesalahan saat registrasi';
+                    }
+                }
+            }
+            
+            $_SESSION['errors'] = $errors;
+        }
+        
+        // Load view
+        include 'views/auth/verify_register.php';
+    }
+    
+    // Kirim ulang kode verifikasi register
+    public function resendRegisterCode() {
+        if (!isset($_SESSION['register_data'])) {
+            redirect('auth/register');
+            return;
+        }
+        
+        $data = $_SESSION['register_data'];
+        
+        // Generate kode baru
+        $code = random_int(100000, 999999);
+        $_SESSION['register_code'] = $code;
+        $_SESSION['register_code_expires'] = time() + 15 * 60;
+        
+        // Kirim email
+        $subject = 'Kode Verifikasi Registrasi - Hotel System';
+        $message = "Halo " . $data['name'] . ",\n\n";
+        $message .= "Kode verifikasi registrasi Anda: " . $code . "\n\n";
+        $message .= "Kode ini berlaku selama 15 menit.";
+        @mail($data['email'], $subject, $message);
+        
+        setFlash('success', 'Kode verifikasi baru telah dikirim ke email Anda');
+        redirect('auth/verifyRegister');
     }
 
     // logout user
@@ -133,12 +225,8 @@ class AuthController {
     // halaman profil
     public function profile() {
         requireLogin();
-
         $user = currentUser();
-
-        include 'views/layouts/header.php';
-        include 'views/auth/profile.php';
-        include 'views/layouts/footer.php';
+        $this->view('auth/profile', ['user' => $user]);
     }
 
     // update profile user

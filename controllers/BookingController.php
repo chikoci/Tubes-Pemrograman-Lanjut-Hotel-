@@ -1,15 +1,15 @@
 <?php
 // Booking Controller
-class BookingController {
+class BookingController extends BaseController {
     private $roomModel;
     private $bookingModel;
-    private $paymentModel;
+    private $paymentTypeModel;
 
     public function __construct() {
-        $db = new Database();
-        $this->roomModel = new Room_model($db->getConnection());
-        $this->bookingModel = new Booking_model($db->getConnection());
-        $this->paymentModel = new Payment_model($db->getConnection());
+        parent::__construct();
+        $this->roomModel = new Room_model($this->db);
+        $this->bookingModel = new Booking_model($this->db);
+        $this->paymentTypeModel = new Payment_type_model($this->db);
     }
 
     // search available rooms
@@ -53,10 +53,12 @@ class BookingController {
             }
         }
 
-        // Load view
-        include 'views/layouts/header.php';
-        include 'views/booking/search.php';
-        include 'views/layouts/footer.php';
+        $data = [
+            'availableRooms' => $availableRooms,
+            'checkIn' => $checkIn,
+            'checkOut' => $checkOut
+        ];
+        $this->view('booking/search', $data);
     }
 
     // buat booking baru
@@ -93,10 +95,14 @@ class BookingController {
         $nights = $this->bookingModel->calculateNights($checkIn, $checkOut);
         $totalPrice = $room['price'] * $nights;
 
-        // Load view
-        include 'views/layouts/header.php';
-        include 'views/booking/create.php';
-        include 'views/layouts/footer.php';
+        $data = [
+            'room' => $room,
+            'checkIn' => $checkIn,
+            'checkOut' => $checkOut,
+            'nights' => $nights,
+            'totalPrice' => $totalPrice
+        ];
+        $this->view('booking/create', $data);
     }
 
     // simpan booking
@@ -116,9 +122,17 @@ class BookingController {
                 return;
             }
 
+            // Validasi user_id dari session
+            if (!isset($_SESSION['user_id']) || empty($_SESSION['user_id'])) {
+                setFlash('error', 'Session tidak valid. Silakan login kembali.');
+                redirect('auth/login');
+                return;
+            }
+
             // Create booking
+            date_default_timezone_set('Asia/Jakarta');
             $bookingData = [
-                'user_id' => $_SESSION['user_id'],
+                'user_id' => (int)$_SESSION['user_id'],
                 'room_id' => $roomId,
                 'check_in_date' => $checkIn,
                 'check_out_date' => $checkOut,
@@ -126,16 +140,29 @@ class BookingController {
                 'status' => 'Pending'
             ];
 
-            $bookingId = $this->bookingModel->create($bookingData);
+            try {
+                $bookingId = $this->bookingModel->create($bookingData);
 
-            if ($bookingId) {
-                setFlash('success', 'Booking berhasil dibuat! Silakan lakukan pembayaran.');
-                // Gunakan format route + &param agar URL valid tanpa .htaccess
-                redirect('booking/payment&booking_id=' . $bookingId);
-                return;
-            } else {
-                setFlash('error', 'Terjadi kesalahan saat membuat booking');
-                redirect('booking/search');
+                if ($bookingId) {
+                    setFlash('success', 'Booking berhasil dibuat! Silakan lakukan pembayaran.');
+                    // Gunakan format route + &param agar URL valid tanpa .htaccess
+                    redirect('booking/payment&booking_id=' . $bookingId);
+                    return;
+                } else {
+                    setFlash('error', 'Terjadi kesalahan saat membuat booking');
+                    redirect('booking/search');
+                }
+            } catch (PDOException $e) {
+                // Log error untuk debugging
+                error_log("Booking error: " . $e->getMessage());
+                
+                if (strpos($e->getMessage(), 'user_id') !== false) {
+                    setFlash('error', 'User ID tidak valid. Silakan logout dan login kembali.');
+                    redirect('auth/logout');
+                } else {
+                    setFlash('error', 'Terjadi kesalahan: ' . $e->getMessage());
+                    redirect('booking/search');
+                }
             }
         }
 
@@ -160,13 +187,14 @@ class BookingController {
             return;
         }
 
-        // Cek apakah sudah ada payment
-        $existingPayment = $this->paymentModel->getByBooking($bookingId);
+        // Ambil payment types
+        $paymentTypes = $this->paymentTypeModel->getAll();
 
-        // Load view
-        include 'views/layouts/header.php';
-        include 'views/booking/payment.php';
-        include 'views/layouts/footer.php';
+        $data = [
+            'booking' => $booking,
+            'paymentTypes' => $paymentTypes
+        ];
+        $this->view('booking/payment', $data);
     }
 
     // Method untuk confirm payment
@@ -175,46 +203,246 @@ class BookingController {
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $bookingId = $_POST['booking_id'];
-            $amount = $_POST['amount'];
+            $paymentTypeId = $_POST['payment_type_id'];
+            
+            // Validasi payment type
+            $paymentType = $this->paymentTypeModel->find($paymentTypeId);
+            if (!$paymentType) {
+                setFlash('error', 'Metode pembayaran tidak valid');
+                redirect('booking/payment&booking_id=' . $bookingId);
+                return;
+            }
+            
+            $paymentProof = null;
+            $paymentStatus = 'Pending';
+            
+            // Handle upload bukti pembayaran untuk metode non-QRIS
+            if ($paymentType['name'] !== 'QRIS') {
+                if (isset($_FILES['payment_proof']) && $_FILES['payment_proof']['error'] === 0) {
+                    $uploadDir = 'uploads/payments/';
+                    if (!file_exists($uploadDir)) {
+                        mkdir($uploadDir, 0777, true);
+                    }
+                    
+                    $fileExt = pathinfo($_FILES['payment_proof']['name'], PATHINFO_EXTENSION);
+                    $allowedExt = ['jpg', 'jpeg', 'png', 'pdf'];
+                    
+                    if (!in_array(strtolower($fileExt), $allowedExt)) {
+                        setFlash('error', 'Format file tidak valid. Gunakan JPG, PNG, atau PDF');
+                        redirect('booking/payment&booking_id=' . $bookingId);
+                        return;
+                    }
+                    
+                    // max 5MB
+                    if ($_FILES['payment_proof']['size'] > 5 * 1024 * 1024) {
+                        setFlash('error', 'Ukuran file maksimal 5MB');
+                        redirect('booking/payment&booking_id=' . $bookingId);
+                        return;
+                    }
+                    
+                    $fileName = 'payment_' . $bookingId . '_' . time() . '.' . $fileExt;
+                    $uploadPath = $uploadDir . $fileName;
+                    
+                    if (move_uploaded_file($_FILES['payment_proof']['tmp_name'], $uploadPath)) {
+                        $paymentProof = $uploadPath;
+                        // Auto approve jika sudah upload bukti
+                        $paymentStatus = 'Success';
+                    } else {
+                        setFlash('error', 'Gagal mengupload bukti pembayaran');
+                        redirect('booking/payment&booking_id=' . $bookingId);
+                        return;
+                    }
+                } else {
+                    setFlash('error', 'Bukti pembayaran wajib diupload');
+                    redirect('booking/payment&booking_id=' . $bookingId);
+                    return;
+                }
+            }
 
-            // Create payment
+            // Update payment info di booking
             $paymentData = [
-                'booking_id' => $bookingId,
-                'amount' => $amount,
+                'payment_type_id' => $paymentTypeId,
+                'payment_proof' => $paymentProof,
                 'payment_date' => date('Y-m-d H:i:s'),
-                'status' => 'Pending'
+                'payment_status' => $paymentStatus
             ];
 
-            $paymentId = $this->paymentModel->create($paymentData);
+            try {
+                $updated = $this->bookingModel->updatePayment($bookingId, $paymentData);
 
-            if ($paymentId) {
-                setFlash('success', 'Konfirmasi pembayaran berhasil! Menunggu verifikasi admin.');
-                redirect('booking/myBookings');
-                return;
-            } else {
-                setFlash('error', 'Terjadi kesalahan saat konfirmasi pembayaran');
+                if ($updated) {
+                    // Jika auto approved, update booking status
+                    if ($paymentStatus === 'Success') {
+                        $this->bookingModel->updateStatus($bookingId, 'Confirmed');
+                        setFlash('success', 'Pembayaran berhasil! Booking Anda telah dikonfirmasi.');
+                        redirect('booking/myBookings');
+                    } else {
+                        // Untuk QRIS redirect ke halaman scan
+                        redirect('booking/qrisPayment&booking_id=' . $bookingId);
+                    }
+                    return;
+                } else {
+                    setFlash('error', 'Terjadi kesalahan saat memproses pembayaran');
+                    redirect('booking/payment&booking_id=' . $bookingId);
+                }
+            } catch (PDOException $e) {
+                error_log("Payment error: " . $e->getMessage());
+                setFlash('error', 'Terjadi kesalahan database saat memproses pembayaran');
+                redirect('booking/payment&booking_id=' . $bookingId);
             }
         }
 
         redirect('booking/myBookings');
     }
 
+    // cancel booking
+    public function cancelBooking() {
+        requireLogin();
+        
+        if (!isset($_GET['booking_id'])) {
+            redirect('booking/myBookings');
+            return;
+        }
+        
+        $bookingId = $_GET['booking_id'];
+        $booking = $this->bookingModel->find($bookingId);
+        
+        // validasi booking ada dan milik user yang login
+        if (!$booking || $booking['user_id'] != $_SESSION['user_id']) {
+            setFlash('error', 'Booking tidak ditemukan');
+            redirect('booking/myBookings');
+            return;
+        }
+        
+        // cek apakah booking masih bisa dibatalkan (status Pending)
+        if ($booking['status'] !== 'Pending') {
+            setFlash('error', 'Booking tidak dapat dibatalkan. Status: ' . $booking['status']);
+            redirect('booking/myBookings');
+            return;
+        }
+        
+        // cek apakah sudah ada payment yang success
+        if ($booking['payment_status'] === 'Success') {
+            setFlash('error', 'Booking tidak dapat dibatalkan karena sudah dibayar');
+            redirect('booking/myBookings');
+            return;
+        }
+        
+        // update status booking jadi Cancelled
+        $updated = $this->bookingModel->updateStatus($bookingId, 'Cancelled');
+        
+        if ($updated) {
+            setFlash('success', 'Booking berhasil dibatalkan');
+        } else {
+            setFlash('error', 'Gagal membatalkan booking');
+        }
+        
+        redirect('booking/myBookings');
+    }
+
+    // halaman QRIS payment
+    public function qrisPayment() {
+        requireLogin();
+        
+        if (!isset($_GET['booking_id'])) {
+            redirect('booking/myBookings');
+            return;
+        }
+        
+        $bookingId = $_GET['booking_id'];
+        $booking = $this->bookingModel->find($bookingId);
+        
+        if (!$booking) {
+            setFlash('error', 'Booking tidak ditemukan');
+            redirect('booking/myBookings');
+            return;
+        }
+        
+        if ($booking['user_id'] != $_SESSION['user_id']) {
+            setFlash('error', 'Akses ditolak');
+            redirect('booking/myBookings');
+            return;
+        }
+        
+        $this->view('booking/qris', ['booking' => $booking]);
+    }
+    
+    // auto approve QRIS payment setelah 10 detik
+    public function qrisAutoApprove() {
+        if (!isset($_GET['booking_id'])) {
+            echo json_encode(['success' => false, 'message' => 'Booking ID required']);
+            return;
+        }
+        
+        $bookingId = $_GET['booking_id'];
+        $booking = $this->bookingModel->find($bookingId);
+        
+        if (!$booking) {
+            echo json_encode(['success' => false, 'message' => 'Booking not found']);
+            return;
+        }
+        
+        try {
+            // Auto approve payment
+            $approved = $this->bookingModel->approvePayment($bookingId);
+            
+            echo json_encode([
+                'success' => $approved,
+                'message' => $approved ? 'Payment approved' : 'Failed to approve',
+                'booking_id' => $bookingId
+            ]);
+        } catch (PDOException $e) {
+            error_log("QRIS approve error: " . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Database error: ' . $e->getMessage(),
+                'booking_id' => $bookingId
+            ]);
+        }
+    }
+
     // Method untuk melihat booking user
     public function myBookings() {
         requireLogin();
 
+        // Auto-cancel booking yang sudah lewat 23 jam
+        $this->autoCancelExpiredBookings();
+
         $bookings = $this->bookingModel->getByUser($_SESSION['user_id']);
 
-        // Get payment info untuk setiap booking
-        foreach ($bookings as &$booking) {
-            $payment = $this->paymentModel->getByBooking($booking['id']);
-            $booking['payment'] = $payment;
+        $this->view('booking/my_bookings', ['bookings' => $bookings]);
+    }
+    
+    // auto-cancel booking yang expired (lebih dari 24 jam)
+    private function autoCancelExpiredBookings() {
+        // Set timezone
+        date_default_timezone_set('Asia/Jakarta');
+        
+        // Ambil semua booking pending milik user
+        $userId = $_SESSION['user_id'];
+        $bookings = $this->bookingModel->getByUser($userId);
+        
+        foreach ($bookings as $booking) {
+            // Skip jika bukan pending
+            if ($booking['status'] !== 'Pending') {
+                continue;
+            }
+            
+            // Skip jika sudah dibayar
+            if ($booking['payment_status'] === 'Success') {
+                continue;
+            }
+            
+            // Hitung selisih waktu dari created_at
+            $createdTime = strtotime($booking['created_at']);
+            $currentTime = time();
+            $diffSeconds = $currentTime - $createdTime;
+            
+            // Jika lebih dari atau sama dengan 23 jam (82800 detik), cancel otomatis
+            if ($diffSeconds >= 82800) {
+                $this->bookingModel->updateStatus($booking['id'], 'Cancelled');
+            }
         }
-
-        // Load view
-        include 'views/layouts/header.php';
-        include 'views/booking/my_bookings.php';
-        include 'views/layouts/footer.php';
     }
 }
 ?>
