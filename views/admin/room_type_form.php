@@ -7,7 +7,7 @@
     ?>
     
     <div class="form-card">
-        <form method="POST" action="<?php echo url('admin/saveRoomType'); ?>">
+        <form method="POST" action="<?php echo url('admin/saveRoomType'); ?>" enctype="multipart/form-data">
             <?php if ($isEdit): ?>
                 <input type="hidden" name="id" value="<?php echo $roomType['id']; ?>">
             <?php endif; ?>
@@ -39,11 +39,15 @@
             </div>
 
             <div class="form-group">
-                <label for="image">Nama File Gambar (opsional)</label>
-                <input type="text" name="image" id="image" 
-                       value="<?php echo e($old['image'] ?? ($roomType['image'] ?? '')); ?>"
-                       placeholder="contoh: deluxe.jpg">
-                <small>Upload gambar ke folder /images/ lalu masukkan nama filenya di sini</small>
+                <label for="image">Gambar Kamar</label>
+                <?php if ($isEdit && !empty($roomType['image'])): ?>
+                    <div class="current-image">
+                        <img src="<?php echo asset('uploads/' . $roomType['image']); ?>" alt="Gambar saat ini" style="max-width: 200px; border-radius: 8px; margin-bottom: 10px;">
+                        <p style="color: var(--text-light); font-size: 0.9rem;">Gambar saat ini. Upload baru untuk mengganti.</p>
+                    </div>
+                <?php endif; ?>
+                <input type="file" name="image" id="image" accept="image/*">
+                <small>Format: JPG, PNG, GIF. Maksimal 2MB</small>
                 <?php if (isset($errors['image'])): ?>
                     <span class="error"><?php echo e($errors['image']); ?></span>
                 <?php endif; ?>

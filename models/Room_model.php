@@ -23,6 +23,12 @@ class Room_model {
         return $this->qb->first();
     }
 
+    public function findByRoomNumber($roomNumber) {
+        $this->qb->table('rooms');
+        $this->qb->where('room_number', '=', $roomNumber);
+        return $this->qb->first();
+    }
+
     public function create($data) {
         $this->qb->table('rooms');
         return $this->qb->insertGetId($data);

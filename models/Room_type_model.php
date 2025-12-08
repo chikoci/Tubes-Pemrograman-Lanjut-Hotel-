@@ -19,6 +19,12 @@ class Room_type_model {
         return $this->qb->first();
     }
 
+    public function findByName($name) {
+        $this->qb->table('room_types');
+        $this->qb->where('name', '=', $name);
+        return $this->qb->first();
+    }
+
     public function create($data) {
         $this->qb->table('room_types');
         return $this->qb->insertGetId($data);

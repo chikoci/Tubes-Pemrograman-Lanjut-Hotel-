@@ -24,7 +24,16 @@
                             <td><strong><?php echo e($type['name']); ?></strong></td>
                             <td><?php echo formatRupiah($type['price']); ?></td>
                             <td class="text-muted"><?php echo e(substr($type['description'], 0, 60)); ?><?php echo strlen($type['description']) > 60 ? '...' : ''; ?></td>
-                            <td class="text-muted"><?php echo $type['image'] ? e($type['image']) : '-'; ?></td>
+                            <td>
+                                <?php if (!empty($type['image'])): ?>
+                                    <div class="table-image">
+                                        <img src="<?php echo asset('uploads/' . $type['image']); ?>" alt="<?php echo e($type['name']); ?>">
+                                        <span class="image-name"><?php echo e($type['image']); ?></span>
+                                    </div>
+                                <?php else: ?>
+                                    <span class="text-muted">-</span>
+                                <?php endif; ?>
+                            </td>
                             <td>
                                 <div class="table-actions">
                                     <a href="<?php echo url('admin/roomTypeForm', ['id' => $type['id']]); ?>" 

@@ -71,8 +71,7 @@ class AdminController extends BaseController {
             $data = [
                 'name' => trim($_POST['name']),
                 'price' => trim($_POST['price']),
-                'description' => trim($_POST['description']),
-                'image' => trim($_POST['image'])
+                'description' => trim($_POST['description'])
             ];
 
             // cek mode edit atau tambah baru
@@ -84,7 +83,51 @@ class AdminController extends BaseController {
                 'price' => ['required', 'numeric']
             ]);
 
+            // Cek apakah nama tipe kamar sudah ada
             if (empty($errors)) {
+                $existingType = $this->roomTypeModel->findByName($data['name']);
+                if ($existingType) {
+                    // Jika edit, pastikan bukan tipe yang sama
+                    if (!$isEdit || ($isEdit && $existingType['id'] != $_POST['id'])) {
+                        $errors['name'] = 'Nama tipe kamar sudah digunakan';
+                    }
+                }
+            }
+
+            // Handle upload gambar
+            $imagePath = null;
+            if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
+                $uploadDir = 'uploads/rooms/';
+                if (!file_exists($uploadDir)) {
+                    mkdir($uploadDir, 0777, true);
+                }
+
+                $fileExt = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+                $allowedExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+                if (!in_array($fileExt, $allowedExt)) {
+                    $errors['image'] = 'Format file tidak valid. Gunakan JPG, PNG, GIF, atau WEBP';
+                } elseif ($_FILES['image']['size'] > 2 * 1024 * 1024) {
+                    $errors['image'] = 'Ukuran file maksimal 2MB';
+                } else {
+                    // Buat nama file dari nama tipe kamar
+                    $fileName = strtolower(str_replace(' ', '_', $data['name'])) . '.' . $fileExt;
+                    $uploadPath = $uploadDir . $fileName;
+
+                    if (move_uploaded_file($_FILES['image']['tmp_name'], $uploadPath)) {
+                        $imagePath = 'rooms/' . $fileName;
+                    } else {
+                        $errors['image'] = 'Gagal mengupload gambar';
+                    }
+                }
+            }
+
+            if (empty($errors)) {
+                // Tambahkan image ke data jika ada upload baru
+                if ($imagePath) {
+                    $data['image'] = $imagePath;
+                }
+
                 if ($isEdit) {
                     // Update
                     $updated = $this->roomTypeModel->update($_POST['id'], $data);
@@ -194,6 +237,17 @@ class AdminController extends BaseController {
                 'room_type_id' => ['required'],
                 'room_number' => ['required']
             ]);
+
+            // Cek apakah nomor kamar sudah dipakai
+            if (empty($errors)) {
+                $existingRoom = $this->roomModel->findByRoomNumber($data['room_number']);
+                if ($existingRoom) {
+                    // Jika edit, pastikan bukan kamar yang sama
+                    if (!$isEdit || ($isEdit && $existingRoom['id'] != $_POST['id'])) {
+                        $errors['room_number'] = 'Nomor kamar sudah digunakan';
+                    }
+                }
+            }
 
             if (empty($errors)) {
                 if ($isEdit) {
