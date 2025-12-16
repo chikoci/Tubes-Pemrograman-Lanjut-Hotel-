@@ -6,7 +6,7 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th style="width: 110px;">ID Booking</th>
+                        <th style="width: 130px;">Kode Booking</th>
                         <th style="width: 140px;">Tamu</th>
                         <th>Email</th>
                         <th style="width: 180px;">Kamar</th>
@@ -19,7 +19,7 @@
                 <tbody>
                     <?php foreach ($bookings as $booking): ?>
                         <tr>
-                            <td><strong>#<?php echo str_pad($booking['id'], 5, '0', STR_PAD_LEFT); ?></strong></td>
+                            <td><strong><?php echo e($booking['booking_code'] ?? '#' . str_pad($booking['id'], 5, '0', STR_PAD_LEFT)); ?></strong></td>
                             <td><strong><?php echo e($booking['user_name']); ?></strong></td>
                             <td class="text-muted"><?php echo e($booking['user_email']); ?></td>
                             <td><?php echo e($booking['room_type_name']); ?> <span class="text-muted">(<?php echo e($booking['room_number']); ?>)</span></td>

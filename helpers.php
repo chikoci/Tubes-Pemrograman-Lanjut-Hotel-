@@ -167,4 +167,43 @@ function getPaymentIcon($paymentTypeName) {
     ];
     return $icons[$paymentTypeName] ?? '💰';
 }
+
+// Generate random booking code
+function generateBookingCode($length = 8) {
+    $characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluded I, O, 0, 1 to avoid confusion
+    $code = '';
+    $max = strlen($characters) - 1;
+    for ($i = 0; $i < $length; $i++) {
+        $code .= $characters[random_int(0, $max)];
+    }
+    return 'KLW-' . $code; // Prefix with hotel name
+}
+
+// Send booking confirmation email
+function sendBookingEmail($booking, $userEmail, $userName) {
+    $subject = 'Konfirmasi Booking - Kluwa Hotel';
+    
+    $message = "Halo " . $userName . ",\n\n";
+    $message .= "Terima kasih telah melakukan reservasi di Kluwa Hotel.\n\n";
+    $message .= "=================================\n";
+    $message .= "DETAIL BOOKING\n";
+    $message .= "=================================\n\n";
+    $message .= "Kode Booking: " . $booking['booking_code'] . "\n";
+    $message .= "Tipe Kamar: " . $booking['room_type_name'] . "\n";
+    $message .= "Nomor Kamar: " . $booking['room_number'] . "\n";
+    $message .= "Check-in: " . formatDate($booking['check_in_date']) . "\n";
+    $message .= "Check-out: " . formatDate($booking['check_out_date']) . "\n";
+    $message .= "Total Pembayaran: " . formatRupiah($booking['total_price']) . "\n\n";
+    $message .= "=================================\n\n";
+    $message .= "Silakan tunjukkan kode booking ini saat check-in.\n";
+    $message .= "Harap lakukan pembayaran dalam waktu 24 jam untuk mengkonfirmasi reservasi Anda.\n\n";
+    $message .= "Jika ada pertanyaan, silakan hubungi kami di:\n";
+    $message .= "Telepon: +62 542 123 4567\n";
+    $message .= "WhatsApp: +62 812 3456 7890\n";
+    $message .= "Email: info@kluwahotel.com\n\n";
+    $message .= "Terima kasih,\n";
+    $message .= "Tim Kluwa Hotel\n";
+    
+    @mail($userEmail, $subject, $message);
+}
 ?>

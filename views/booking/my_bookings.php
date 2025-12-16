@@ -6,7 +6,7 @@
             <?php foreach ($bookings as $booking): ?>
                 <div class="booking-item">
                     <div class="booking-header">
-                        <h3>Booking #<?php echo str_pad($booking['id'], 5, '0', STR_PAD_LEFT); ?></h3>
+                        <h3>Booking <?php echo e($booking['booking_code'] ?? '#' . str_pad($booking['id'], 5, '0', STR_PAD_LEFT)); ?></h3>
                         <span class="status-badge status-<?php echo strtolower($booking['status']); ?>">
                             <?php echo e($booking['status']); ?>
                         </span>

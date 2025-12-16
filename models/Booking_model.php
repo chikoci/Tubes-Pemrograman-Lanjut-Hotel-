@@ -30,6 +30,12 @@ class Booking_model {
         return $this->qb->first();
     }
 
+    public function findByCode($bookingCode) {
+        $this->qb->table('bookings');
+        $this->qb->where('booking_code', '=', $bookingCode);
+        return $this->qb->first();
+    }
+
     public function getByUser($userId) {
         $this->qb->table('bookings');
         $this->qb->select([

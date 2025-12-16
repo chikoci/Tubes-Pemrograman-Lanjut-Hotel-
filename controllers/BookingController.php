@@ -129,9 +129,18 @@ class BookingController extends BaseController {
                 return;
             }
 
+            // Generate unique booking code
+            $bookingCode = generateBookingCode();
+            
+            // Pastikan kode booking unik
+            while ($this->bookingModel->findByCode($bookingCode)) {
+                $bookingCode = generateBookingCode();
+            }
+
             // Create booking
             date_default_timezone_set('Asia/Jakarta');
             $bookingData = [
+                'booking_code' => $bookingCode,
                 'user_id' => (int)$_SESSION['user_id'],
                 'room_id' => $roomId,
                 'check_in_date' => $checkIn,
@@ -144,7 +153,13 @@ class BookingController extends BaseController {
                 $bookingId = $this->bookingModel->create($bookingData);
 
                 if ($bookingId) {
-                    setFlash('success', 'Booking berhasil dibuat! Silakan lakukan pembayaran.');
+                    // Get full booking details for email
+                    $bookingDetails = $this->bookingModel->find($bookingId);
+                    
+                    // Send confirmation email
+                    sendBookingEmail($bookingDetails, $_SESSION['user_email'], $_SESSION['user_name']);
+                    
+                    setFlash('success', 'Booking berhasil dibuat! Kode booking: ' . $bookingCode . '. Detail telah dikirim ke email Anda.');
                     // Gunakan format route + &param agar URL valid tanpa .htaccess
                     redirect('booking/payment&booking_id=' . $bookingId);
                     return;

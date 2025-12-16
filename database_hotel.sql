@@ -82,6 +82,7 @@ INSERT INTO payment_types (name, description) VALUES
 -- Tabel bookings (dengan payment fields digabung)
 CREATE TABLE IF NOT EXISTS bookings (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    booking_code VARCHAR(20) NOT NULL UNIQUE,
     user_id INT NOT NULL,
     room_id INT NOT NULL,
     check_in_date DATE NOT NULL,

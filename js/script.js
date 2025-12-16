@@ -1,5 +1,23 @@
 // JavaScript untuk interaksi tambahan
 
+// Toggle User Dropdown Menu
+function toggleUserMenu() {
+    var menu = document.getElementById('userDropdownMenu');
+    if (menu) {
+        menu.classList.toggle('show');
+    }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    var dropdown = document.querySelector('.nav-user-dropdown');
+    var menu = document.getElementById('userDropdownMenu');
+    
+    if (dropdown && menu && !dropdown.contains(e.target)) {
+        menu.classList.remove('show');
+    }
+});
+
 // DOM Ready
 document.addEventListener('DOMContentLoaded', function() {
     

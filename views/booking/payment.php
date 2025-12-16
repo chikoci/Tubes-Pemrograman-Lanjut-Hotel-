@@ -6,8 +6,8 @@
             <h3>Detail Booking</h3>
             <table class="info-table">
                 <tr>
-                    <td><strong>Nomor Booking:</strong></td>
-                    <td>#<?php echo str_pad($booking['id'], 5, '0', STR_PAD_LEFT); ?></td>
+                    <td><strong>Kode Booking:</strong></td>
+                    <td><strong style="color: var(--accent-color); font-size: 1.1rem;"><?php echo e($booking['booking_code'] ?? '#' . str_pad($booking['id'], 5, '0', STR_PAD_LEFT)); ?></strong></td>
                 </tr>
                 <tr>
                     <td><strong>Tipe Kamar:</strong></td>
