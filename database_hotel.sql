@@ -44,6 +44,7 @@ INSERT INTO room_types (name, price, description, image) VALUES
 ('Deluxe', 800000, 'Kamar deluxe dengan pemandangan kota, AC, TV, Wi-Fi gratis, Bathub', 'rooms/deluxe.jpg'),
 ('Suite', 1200000, 'Suite mewah dengan ruang tamu terpisah, AC, TV, Wi-Fi gratis, Bathub', 'rooms/suite.jpg');
 -- Tabel rooms
+-- Note: Status 'Occupied' ditampilkan secara dinamis berdasarkan booking aktif, tidak disimpan di database
 CREATE TABLE IF NOT EXISTS rooms (
     id INT PRIMARY KEY AUTO_INCREMENT,
     room_type_id INT NOT NULL,

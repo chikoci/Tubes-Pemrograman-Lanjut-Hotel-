@@ -9,10 +9,49 @@ class Room_model {
     }
 
     public function getAll() {
-        $this->qb->table('rooms');
-        $this->qb->select(['rooms.*', 'room_types.name as room_type_name', 'room_types.price']);
-        $this->qb->join('room_types', 'rooms.room_type_id', '=', 'room_types.id');
-        return $this->qb->get();
+        // Query dengan status dinamis berdasarkan booking aktif hari ini
+        $today = date('Y-m-d');
+        return $this->getAllWithDateRange($today, $today);
+    }
+
+    /**
+     * Get all rooms with status based on date range
+     * Status will be 'Occupied' if there's any confirmed booking overlapping with the date range
+     */
+    public function getAllWithDateRange($startDate, $endDate) {
+        $sql = "
+            SELECT r.*, 
+                   rt.name as room_type_name, 
+                   rt.price,
+                   CASE 
+                       WHEN r.status = 'Maintenance' THEN 'Maintenance'
+                       WHEN EXISTS (
+                           SELECT 1 FROM bookings b 
+                           WHERE b.room_id = r.id 
+                           AND b.status = 'Confirmed'
+                           AND (
+                               (b.check_in_date <= ? AND b.check_out_date > ?)
+                               OR (b.check_in_date < ? AND b.check_out_date >= ?)
+                               OR (b.check_in_date >= ? AND b.check_out_date <= ?)
+                           )
+                       ) THEN 'Occupied'
+                       ELSE 'Available'
+                   END as display_status
+            FROM rooms r
+            INNER JOIN room_types rt ON r.room_type_id = rt.id
+            ORDER BY r.room_number ASC
+        ";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$startDate, $startDate, $endDate, $endDate, $startDate, $endDate]);
+        $rooms = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Gunakan display_status sebagai status untuk tampilan
+        foreach ($rooms as &$room) {
+            $room['status'] = $room['display_status'];
+        }
+        
+        return $rooms;
     }
 
     public function find($id) {

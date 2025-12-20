@@ -49,6 +49,7 @@
                         Maintenance
                     </option>
                 </select>
+                <small class="form-hint">* Status "Occupied" akan otomatis tampil jika kamar sedang dibooking</small>
                 <?php if (isset($errors['status'])): ?>
                     <span class="error"><?php echo e($errors['status']); ?></span>
                 <?php endif; ?>

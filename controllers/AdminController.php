@@ -16,8 +16,16 @@ class AdminController extends BaseController {
     public function dashboard() {
         requireAdmin();
 
-        // ambil statistik
-        $stats = $this->bookingModel->getStatistics();
+        // Get filter dates from request
+        $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : null;
+        $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : null;
+        
+        // ambil statistik dengan filter
+        if ($startDate && $endDate) {
+            $stats = $this->bookingModel->getStatisticsFiltered($startDate, $endDate);
+        } else {
+            $stats = $this->bookingModel->getStatistics();
+        }
         
         // hitung total room types dan rooms
         $totalRoomTypes = count($this->roomTypeModel->getAll());
@@ -26,7 +34,11 @@ class AdminController extends BaseController {
         $stats['total_room_types'] = $totalRoomTypes;
         $stats['total_rooms'] = $totalRooms;
 
-        $this->view('admin/dashboard', ['stats' => $stats]);
+        $this->view('admin/dashboard', [
+            'stats' => $stats,
+            'startDate' => $startDate,
+            'endDate' => $endDate
+        ]);
     }
 
     // manajemen tipe kamar
@@ -186,9 +198,22 @@ class AdminController extends BaseController {
     public function rooms() {
         requireAdmin();
 
-        $rooms = $this->roomModel->getAll();
+        // Get filter dates from request
+        $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : null;
+        $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : null;
 
-        $this->view('admin/rooms', ['rooms' => $rooms]);
+        // Jika ada filter tanggal, gunakan method dengan date range
+        if ($startDate && $endDate) {
+            $rooms = $this->roomModel->getAllWithDateRange($startDate, $endDate);
+        } else {
+            $rooms = $this->roomModel->getAll();
+        }
+
+        $this->view('admin/rooms', [
+            'rooms' => $rooms,
+            'startDate' => $startDate,
+            'endDate' => $endDate
+        ]);
     }
 
     // form add/edit room

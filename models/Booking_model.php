@@ -97,6 +97,11 @@ class Booking_model {
         $this->qb->where('status', '=', 'Confirmed');
         $confirmedCount = $this->qb->count();
         
+        // Cancelled count
+        $this->qb->table('bookings');
+        $this->qb->where('status', '=', 'Cancelled');
+        $cancelledCount = $this->qb->count();
+        
         // Total revenue
         $this->qb->table('bookings');
         $this->qb->select(['SUM(total_price) as total']);
@@ -107,6 +112,7 @@ class Booking_model {
             'total' => $totalBookings,
             'pending' => $pendingCount,
             'confirmed' => $confirmedCount,
+            'cancelled' => $cancelledCount,
             'revenue' => $revenue['total'] ?? 0
         ];
     }
@@ -131,6 +137,68 @@ class Booking_model {
             $this->db->rollBack();
             return false;
         }
+    }
+
+    /**
+     * Get statistics with date range filter
+     */
+    public function getStatisticsFiltered($startDate = null, $endDate = null) {
+        $hasFilter = $startDate && $endDate;
+        
+        // Total bookings
+        $this->qb->table('bookings');
+        if ($hasFilter) {
+            $this->qb->where('DATE(created_at)', '>=', $startDate);
+            $this->qb->where('DATE(created_at)', '<=', $endDate);
+        }
+        $totalBookings = $this->qb->count();
+        
+        // Pending count
+        $this->qb->table('bookings');
+        $this->qb->where('status', '=', 'Pending');
+        if ($hasFilter) {
+            $this->qb->where('DATE(created_at)', '>=', $startDate);
+            $this->qb->where('DATE(created_at)', '<=', $endDate);
+        }
+        $pendingCount = $this->qb->count();
+        
+        // Confirmed count
+        $this->qb->table('bookings');
+        $this->qb->where('status', '=', 'Confirmed');
+        if ($hasFilter) {
+            $this->qb->where('DATE(created_at)', '>=', $startDate);
+            $this->qb->where('DATE(created_at)', '<=', $endDate);
+        }
+        $confirmedCount = $this->qb->count();
+        
+        // Cancelled count
+        $this->qb->table('bookings');
+        $this->qb->where('status', '=', 'Cancelled');
+        if ($hasFilter) {
+            $this->qb->where('DATE(created_at)', '>=', $startDate);
+            $this->qb->where('DATE(created_at)', '<=', $endDate);
+        }
+        $cancelledCount = $this->qb->count();
+        
+        // Total revenue (from confirmed bookings)
+        $sql = "SELECT SUM(total_price) as total FROM bookings WHERE status = 'Confirmed'";
+        $params = [];
+        if ($hasFilter) {
+            $sql .= " AND DATE(created_at) >= ? AND DATE(created_at) <= ?";
+            $params[] = $startDate;
+            $params[] = $endDate;
+        }
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $revenue = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return [
+            'total' => $totalBookings,
+            'pending' => $pendingCount,
+            'confirmed' => $confirmedCount,
+            'cancelled' => $cancelledCount,
+            'revenue' => $revenue['total'] ?? 0
+        ];
     }
 }
 ?>
